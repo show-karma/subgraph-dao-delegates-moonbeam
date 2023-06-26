@@ -1,0 +1,47 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Contract
+    network: moonriver
+    source:
+      address: "0x0000000000000000000000000000000000000812"
+      abi: Contract
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Delegated
+        - Undelegated
+        - Unlocked
+        - VoteRemoved
+        - VoteRemovedForTrack
+        - VoteRemovedOther
+        - VoteSplit
+        - VoteSplitAbstained
+        - Voted
+      abis:
+        - name: Contract
+          file: ./abis/Contract.json
+      eventHandlers:
+        - event: Delegated(indexed uint16,address,address,uint256,uint8)
+          handler: handleDelegated
+        - event: Undelegated(indexed uint16,address)
+          handler: handleUndelegated
+        - event: Unlocked(indexed uint16,address)
+          handler: handleUnlocked
+        - event: VoteRemoved(indexed uint32,address)
+          handler: handleVoteRemoved
+        - event: VoteRemovedForTrack(indexed uint32,uint16,address)
+          handler: handleVoteRemovedForTrack
+        - event: VoteRemovedOther(indexed uint32,address,address,uint16)
+          handler: handleVoteRemovedOther
+        - event: VoteSplit(indexed uint32,address,uint256,uint256)
+          handler: handleVoteSplit
+        - event: VoteSplitAbstained(indexed uint32,address,uint256,uint256,uint256)
+          handler: handleVoteSplitAbstained
+        - event: Voted(indexed uint32,address,bool,uint256,uint8)
+          handler: handleVoted
+      file: ./src/contract.ts

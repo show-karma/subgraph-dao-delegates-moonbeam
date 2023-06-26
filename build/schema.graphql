@@ -1,0 +1,185 @@
+type Organization @entity {
+  id: ID!
+  token: String!
+  delegates: [DelegateOrganization!] @derivedFrom(field: "organization")
+  delegators: [DelegatorOrganization!] @derivedFrom(field: "organization")
+}
+
+type User @entity {
+  id: ID!
+  delegateorganizations: [DelegateOrganization!] @derivedFrom(field: "delegate")
+  delegatororganizations: [DelegatorOrganization!]
+    @derivedFrom(field: "delegator")
+}
+
+type DelegateOrganization @entity {
+  id: ID! # Set to `${user.id}-${organization.id}`
+  delegate: User!
+  organization: Organization!
+  voteBalance: BigInt
+  firstTokenDelegatedAt: BigInt
+}
+
+type DelegatorOrganization @entity {
+  id: ID! # Set to `${user.id}-${organization.id}`
+  delegator: User!
+  delegate: User!
+  organization: Organization!
+  delegations: [Delegation!] @derivedFrom(field: "delegator")
+}
+
+type DelegateVotingPowerChange @entity {
+  id: ID!
+  tokenAddress: String!
+  delegate: String!
+  previousBalance: BigInt!
+  newBalance: BigInt!
+  blockTimestamp: BigInt!
+  txnHash: String!
+  blockNumber: BigInt!
+}
+
+type DelegateChange @entity {
+  id: ID!
+  oldDelegate: String
+  newDelegate: String
+  delegator: String!
+  blockTimestamp: BigInt!
+  txnHash: String!
+  blockNumber: BigInt!
+}
+
+type DelegatingHistory @entity {
+  id: String!
+  daoName: String!
+  fromDelegate: String
+  toDelegate: String
+  delegator: String!
+  amount: BigInt!
+  timestamp: BigInt!
+  trackId: Int!
+}
+
+type Delegation @entity {
+  id: ID!
+  delegate: DelegateOrganization! 
+  delegator: DelegatorOrganization! 
+  trackId: Int! # uint16
+  amount: BigInt # uint256
+  timestamp: BigInt!
+  status: Boolean!
+}
+
+
+type Vote @entity {
+  id: ID!
+  user: User!
+  proposal: String!
+  support: Int
+  solution: BigInt
+  weight: BigInt
+  reason: String
+  organization: Organization!
+  timestamp: BigInt!
+  conviction: Int!
+}
+
+
+type UndelegatedHistory @entity(immutable: true) {
+  id: Bytes!
+  trackId: Int! # uint16
+  delegator: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+
+type Delegated @entity(immutable: true) {
+  id: Bytes!
+  trackId: Int! # uint16
+  from: Bytes! # address
+  to: Bytes! # address
+  delegatedAmount: BigInt! # uint256
+  conviction: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+
+
+type Unlocked @entity(immutable: true) {
+  id: Bytes!
+  trackId: Int! # uint16
+  caller: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoteRemoved @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  voter: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoteRemovedForTrack @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  trackId: Int! # uint16
+  voter: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoteRemovedOther @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  caller: Bytes! # address
+  target: Bytes! # address
+  trackId: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoteSplit @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  voter: Bytes! # address
+  aye: BigInt! # uint256
+  nay: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type VoteSplitAbstained @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  voter: Bytes! # address
+  aye: BigInt! # uint256
+  nay: BigInt! # uint256
+  abstain: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Voted @entity(immutable: true) {
+  id: Bytes!
+  pollIndex: BigInt! # uint32
+  voter: Bytes! # address
+  aye: Boolean! # bool
+  voteAmount: BigInt! # uint256
+  conviction: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
