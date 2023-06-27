@@ -708,6 +708,19 @@ export class DelegatingHistory extends Entity {
   set trackId(value: i32) {
     this.set("trackId", Value.fromI32(value));
   }
+
+  get conviction(): i32 {
+    let value = this.get("conviction");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set conviction(value: i32) {
+    this.set("conviction", Value.fromI32(value));
+  }
 }
 
 export class Delegation extends Entity {
@@ -825,6 +838,19 @@ export class Delegation extends Entity {
 
   set status(value: boolean) {
     this.set("status", Value.fromBoolean(value));
+  }
+
+  get conviction(): i32 {
+    let value = this.get("conviction");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set conviction(value: i32) {
+    this.set("conviction", Value.fromI32(value));
   }
 }
 

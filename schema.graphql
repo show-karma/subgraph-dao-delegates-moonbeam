@@ -58,6 +58,7 @@ type DelegatingHistory @entity {
   amount: BigInt!
   timestamp: BigInt!
   trackId: Int!
+  conviction: Int!
 }
 
 type Delegation @entity {
@@ -68,6 +69,7 @@ type Delegation @entity {
   amount: BigInt # uint256
   timestamp: BigInt!
   status: Boolean!
+  conviction: Int!
 }
 
 

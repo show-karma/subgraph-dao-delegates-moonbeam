@@ -80,6 +80,7 @@ export function handleDelegated(event: DelegatedEvent): void {
   delegation.trackId = event.params.trackId;
   delegation.amount = event.params.delegatedAmount;
   delegation.timestamp = event.block.timestamp;
+  delegation.conviction = event.params.conviction;
   delegation.status = true;
   delegation.save();
   
@@ -91,6 +92,7 @@ export function handleDelegated(event: DelegatedEvent): void {
     delegatingHistory.timestamp = event.block.timestamp;
     delegatingHistory.trackId = event.params.trackId;
   }
+  delegatingHistory.conviction = event.params.conviction;
   delegatingHistory.fromDelegate = event.params.from.toHexString();
   delegatingHistory.toDelegate = event.params.to.toHexString();
   delegatingHistory.delegator = delegator.id;
