@@ -139,16 +139,7 @@ type VoteRemovedForTrack @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type VoteRemovedOther @entity(immutable: true) {
-  id: Bytes!
-  pollIndex: BigInt! # uint32
-  caller: Bytes! # address
-  target: Bytes! # address
-  trackId: Int! # uint16
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
+
 
 type VoteSplit @entity(immutable: true) {
   id: Bytes!

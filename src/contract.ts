@@ -12,17 +12,13 @@ import {
   Voted as VotedEvent
 } from "../generated/Contract/Contract"
 import {
-  DelegateChange,
-  Delegated,
   DelegatingHistory,
-  DelegatorOrganization,
   Organization,
   UndelegatedHistory,
   Unlocked,
   User,
   VoteRemoved,
   VoteRemovedForTrack,
-  VoteRemovedOther,
   VoteSplit,
   VoteSplitAbstained,
   Vote,
@@ -209,23 +205,6 @@ export function handleVoteRemovedForTrack(
   entity.save()
 }
 
-export function handleVoteRemovedOther(event: VoteRemovedOtherEvent): void {
-  store.remove("Vote",  event.params.caller.toHexString() + event.params.pollIndex.toHexString());
-  
-  let entity = new VoteRemovedOther(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.caller = event.params.caller
-  entity.target = event.params.target
-  entity.trackId = event.params.trackId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
 
 export function handleVoteSplit(event: VoteSplitEvent): void {
   let entity = new VoteSplit(

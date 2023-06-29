@@ -36,8 +36,6 @@ dataSources:
           handler: handleVoteRemoved
         - event: VoteRemovedForTrack(indexed uint32,uint16,address)
           handler: handleVoteRemovedForTrack
-        - event: VoteRemovedOther(indexed uint32,address,address,uint16)
-          handler: handleVoteRemovedOther
         - event: VoteSplit(indexed uint32,address,uint256,uint256)
           handler: handleVoteSplit
         - event: VoteSplitAbstained(indexed uint32,address,uint256,uint256,uint256)
