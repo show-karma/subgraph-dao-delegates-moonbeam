@@ -58,6 +58,7 @@ type DelegatingHistory @entity {
   amount: BigInt!
   timestamp: BigInt!
   trackId: Int!
+  conviction: Int!
 }
 
 type Delegation @entity {
@@ -68,6 +69,7 @@ type Delegation @entity {
   amount: BigInt # uint256
   timestamp: BigInt!
   status: Boolean!
+  conviction: Int!
 }
 
 
@@ -101,10 +103,10 @@ type Delegated @entity(immutable: true) {
   from: Bytes! # address
   to: Bytes! # address
   delegatedAmount: BigInt! # uint256
-  conviction: Int! # uint8
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+  conviction: Int!
 }
 
 
@@ -183,3 +185,14 @@ type Voted @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type Proposal @entity(immutable: true) {
+  id: Bytes!  
+  proposalIndex: BigInt!
+  deposit: BigInt!
+}
+
+type Seconded @entity(immutable: true) {
+  id: Bytes!
+  proposalIndex: BigInt!
+  seconder: String!
+}

@@ -10,7 +10,7 @@ import {
   VoteSplit as VoteSplitEvent,
   VoteSplitAbstained as VoteSplitAbstainedEvent,
   Voted as VotedEvent
-} from "../generated/Contract/Contract"
+} from "../generated/MoonriverContract/MoonriverContract"
 import {
   DelegateChange,
   Delegated,
@@ -38,7 +38,7 @@ import { getDelegatorOrganization } from "./shared/getDelegatorOrganization";
 import { getUser } from './shared/getUser';
 import { handleDelegateVotingPowerChange } from './shared/delegateVotingPowerChange';
 
-const daoName = "moonriver";
+const daoName = "moonbeam";
 
 export function handleDelegated(event: DelegatedEvent): void {
   let organization = Organization.load(daoName)
@@ -47,7 +47,6 @@ export function handleDelegated(event: DelegatedEvent): void {
   }
   organization.token = daoName
   organization.save()
-
 
   let delegate = new User(event.params.to.toHexString())
   delegate.save();
@@ -82,7 +81,6 @@ export function handleDelegated(event: DelegatedEvent): void {
   delegation.amount = event.params.delegatedAmount;
   delegation.timestamp = event.block.timestamp;
   delegation.status = true;
-  delegation.conviction = event.params.conviction;
   delegation.save();
   
   let delegatingHistory = DelegatingHistory.load(`${event.transaction.hash.toHexString()}-${event.logIndex.toString()}`)
@@ -92,7 +90,6 @@ export function handleDelegated(event: DelegatedEvent): void {
     delegatingHistory.amount =  event.params.delegatedAmount;
     delegatingHistory.timestamp = event.block.timestamp;
     delegatingHistory.trackId = event.params.trackId;
-    delegatingHistory.conviction = event.params.conviction;
   }
   delegatingHistory.fromDelegate = event.params.from.toHexString();
   delegatingHistory.toDelegate = event.params.to.toHexString();

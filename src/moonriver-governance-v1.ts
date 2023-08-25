@@ -3,14 +3,10 @@ import { BigInt } from "@graphprotocol/graph-ts";
 import {
   Delegated as DelegatedEvent,
   Undelegated as UndelegatedEvent,
-  Unlocked as UnlockedEvent,
-  VoteRemoved as VoteRemovedEvent,
-  VoteRemovedForTrack as VoteRemovedForTrackEvent,
-  VoteRemovedOther as VoteRemovedOtherEvent,
-  VoteSplit as VoteSplitEvent,
-  VoteSplitAbstained as VoteSplitAbstainedEvent,
-  Voted as VotedEvent
-} from "../generated/Contract/Contract"
+  Proposed as ProposedEvent,
+  Seconded as SecondedEvent,
+  StandardVote as VoteEvent
+} from "../generated/MonriverV1/MonriverV1"
 import {
   DelegateChange,
   Delegated,
@@ -29,7 +25,9 @@ import {
   Delegation,
   DelegateOrganization,
   Voted,
-  DelegateVotingPowerChange
+  DelegateVotingPowerChange,
+  Seconded,
+  Proposal
 } from "../generated/schema"
 import { getDelegateOrganization } from "./shared/getDelegateOrganization";
 import { getFirstTokenDelegatedAt } from "./shared/getFirstTokenDelegatedAt";
@@ -38,7 +36,7 @@ import { getDelegatorOrganization } from "./shared/getDelegatorOrganization";
 import { getUser } from './shared/getUser';
 import { handleDelegateVotingPowerChange } from './shared/delegateVotingPowerChange';
 
-const daoName = "moonriver";
+const daoName = "moonbeam";
 
 export function handleDelegated(event: DelegatedEvent): void {
   let organization = Organization.load(daoName)
@@ -48,11 +46,10 @@ export function handleDelegated(event: DelegatedEvent): void {
   organization.token = daoName
   organization.save()
 
-
-  let delegate = new User(event.params.to.toHexString())
+  let delegate = new User(event.params.target.toHexString())
   delegate.save();
 
-  let delegator = new User(event.params.from.toHexString())
+  let delegator = new User(event.params.who.toHexString())
   delegator.save();
 
   const delegatorId = `${delegator.id}-${organization.id}`;
@@ -64,9 +61,8 @@ export function handleDelegated(event: DelegatedEvent): void {
 
   const delegateOrganizationId = `${delegate.id}-${organization.id}`;
   const delegateOrganization = getDelegateOrganization(delegateOrganizationId);
-  let auxBalance = delegateOrganization.voteBalance === null ? BigInt.zero() : delegateOrganization.voteBalance!;
 
-  delegateOrganization.voteBalance = event.params.delegatedAmount.plus(auxBalance);
+  delegateOrganization.voteBalance = BigInt.zero();
   
   delegateOrganization.delegate = delegate.id;
   delegateOrganization.organization = organization.id;
@@ -75,36 +71,34 @@ export function handleDelegated(event: DelegatedEvent): void {
   delegateOrganization.save()
 
 
-  let delegation = new Delegation(`${delegatorId}-${event.params.trackId}`);
+  let delegation = new Delegation(`${delegatorId}-governanceV1`);
   delegation.delegator = delegatorOrganization.id;
   delegation.delegate = delegateOrganization.id;
-  delegation.trackId = event.params.trackId;
-  delegation.amount = event.params.delegatedAmount;
+  delegation.trackId = -1;
+  delegation.amount = BigInt.zero();
   delegation.timestamp = event.block.timestamp;
   delegation.status = true;
-  delegation.conviction = event.params.conviction;
   delegation.save();
   
   let delegatingHistory = DelegatingHistory.load(`${event.transaction.hash.toHexString()}-${event.logIndex.toString()}`)
   if(!delegatingHistory){
     delegatingHistory = new DelegatingHistory(`${event.transaction.hash.toHexString()}-${event.logIndex.toString()}`);
     delegatingHistory.daoName = organization.id;
-    delegatingHistory.amount =  event.params.delegatedAmount;
+    delegatingHistory.amount =  BigInt.zero();
     delegatingHistory.timestamp = event.block.timestamp;
-    delegatingHistory.trackId = event.params.trackId;
-    delegatingHistory.conviction = event.params.conviction;
+    delegatingHistory.trackId = -1;
   }
-  delegatingHistory.fromDelegate = event.params.from.toHexString();
-  delegatingHistory.toDelegate = event.params.to.toHexString();
+  delegatingHistory.fromDelegate = null;
+  delegatingHistory.toDelegate = event.params.target.toHexString();
   delegatingHistory.delegator = delegator.id;
   delegatingHistory.save();
 
   handleDelegateVotingPowerChange(
     event.transaction.hash.toHexString(),
     event.logIndex.toHexString(),
-    auxBalance,
+    BigInt.zero(),
     delegateOrganization.voteBalance!,
-    event.params.to.toHexString(),
+    event.params.target.toHexString(),
     event.address.toHexString(),
     event.block.timestamp,
     event.block.number
@@ -112,9 +106,9 @@ export function handleDelegated(event: DelegatedEvent): void {
 }
 
 export function handleUndelegated(event: UndelegatedEvent): void {
-  let delegator = User.load(event.params.caller.toHexString())
+  let delegator = User.load(event.params.who.toHexString())
   if (!delegator) {
-    delegator = new User(event.params.caller.toHexString())
+    delegator = new User(event.params.who.toHexString())
     delegator.save();
   }
 
@@ -122,7 +116,7 @@ export function handleUndelegated(event: UndelegatedEvent): void {
   const delegatorId = `${delegator.id}-${organization.id}`;
 
 
-  let delegation = Delegation.load(`${delegatorId}-${event.params.trackId}`);
+  let delegation = Delegation.load(`${delegatorId}-governanceV1`);
   if(delegation){
     
     const delegateOrganization = DelegateOrganization.load(delegation.delegate);
@@ -144,15 +138,15 @@ export function handleUndelegated(event: UndelegatedEvent): void {
       );
     }
 
-    store.remove("Delegation", `${delegatorId}-${event.params.trackId}`);
+    store.remove("Delegation", `${delegatorId}-governanceV1`);
   }
 
 
   let entity = new UndelegatedHistory(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
-  entity.trackId = event.params.trackId
-  entity.delegator = event.params.caller
+  entity.trackId = -1
+  entity.delegator = event.params.who
   entity.blockNumber = event.block.number
   entity.blockTimestamp = event.block.timestamp
   entity.transactionHash = event.transaction.hash
@@ -160,110 +154,8 @@ export function handleUndelegated(event: UndelegatedEvent): void {
 
 }
 
-export function handleUnlocked(event: UnlockedEvent): void {
-  let entity = new Unlocked(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.trackId = event.params.trackId
-  entity.caller = event.params.caller
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoteRemoved(event: VoteRemovedEvent): void {
-  store.remove("Vote",  event.params.voter.toHexString() + event.params.pollIndex.toHexString());
-  
-  let entity = new VoteRemoved(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.voter = event.params.voter
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoteRemovedForTrack(
-  event: VoteRemovedForTrackEvent
-): void {
-  store.remove("Vote",  event.params.voter.toHexString() + event.params.pollIndex.toHexString());
-  
-
-  let entity = new VoteRemovedForTrack(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.trackId = event.params.trackId
-  entity.voter = event.params.voter
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoteRemovedOther(event: VoteRemovedOtherEvent): void {
-  store.remove("Vote",  event.params.caller.toHexString() + event.params.pollIndex.toHexString());
-  
-  let entity = new VoteRemovedOther(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.caller = event.params.caller
-  entity.target = event.params.target
-  entity.trackId = event.params.trackId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoteSplit(event: VoteSplitEvent): void {
-  let entity = new VoteSplit(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.voter = event.params.voter
-  entity.aye = event.params.aye
-  entity.nay = event.params.nay
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoteSplitAbstained(event: VoteSplitAbstainedEvent): void {
-  store.remove("VoteSplit",  event.params.voter.toHexString() + event.params.pollIndex.toHexString());
-  
-  let entity = new VoteSplitAbstained(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.pollIndex = event.params.pollIndex
-  entity.voter = event.params.voter
-  entity.aye = event.params.aye
-  entity.nay = event.params.nay
-  entity.abstain = event.params.abstain
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
-
-export function handleVoted(event: VotedEvent): void {
+export function handleStandardVote(event: VoteEvent): void {
   let organization = Organization.load(daoName)
   if(!organization){
     organization = new Organization(daoName)
@@ -272,7 +164,7 @@ export function handleVoted(event: VotedEvent): void {
   organization.save()
 
   let vote = new Vote(
-    event.params.voter.toHexString() + event.params.pollIndex.toHexString()
+    event.params.voter.toHexString() + event.params.referendumIndex.toHexString()
   );
 
   let delegate = new User(event.params.voter.toHexString())
@@ -291,7 +183,7 @@ export function handleVoted(event: VotedEvent): void {
   const voteWeight = event.params.voteAmount;
 
   if (voteWeight && voteWeight.gt(new BigInt(0))) {
-    vote.proposal = event.params.pollIndex.toHexString();
+    vote.proposal = `${event.params.referendumIndex.toHexString()}-governanceV1`;
     vote.user = delegate.id;
     vote.support = event.params.aye === true ? 1 : 0;
     vote.weight = voteWeight;
@@ -302,13 +194,11 @@ export function handleVoted(event: VotedEvent): void {
     vote.save();
   }
   
-
-
   // historic
   let entity = new Voted(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   )
-  entity.pollIndex = event.params.pollIndex
+  entity.pollIndex = event.params.referendumIndex
   entity.voter = event.params.voter
   entity.aye = event.params.aye
   entity.voteAmount = event.params.voteAmount
@@ -318,5 +208,24 @@ export function handleVoted(event: VotedEvent): void {
   entity.blockTimestamp = event.block.timestamp
   entity.transactionHash = event.transaction.hash
 
+  entity.save()
+}
+
+export function handleProposed(event: ProposedEvent): void {
+  let entity = new Proposal(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  entity.deposit = event.params.deposit
+  entity.proposalIndex = event.params.proposalIndex
+  entity.save()
+}
+
+
+export function handleSeconded(event: SecondedEvent): void {
+  let entity = new Seconded(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  entity.seconder = event.params.seconder.toHexString()
+  entity.proposalIndex = event.params.proposalIndex
   entity.save()
 }

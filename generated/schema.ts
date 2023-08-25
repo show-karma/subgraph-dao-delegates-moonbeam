@@ -708,6 +708,19 @@ export class DelegatingHistory extends Entity {
   set trackId(value: i32) {
     this.set("trackId", Value.fromI32(value));
   }
+
+  get conviction(): i32 {
+    let value = this.get("conviction");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set conviction(value: i32) {
+    this.set("conviction", Value.fromI32(value));
+  }
 }
 
 export class Delegation extends Entity {
@@ -825,6 +838,19 @@ export class Delegation extends Entity {
 
   set status(value: boolean) {
     this.set("status", Value.fromBoolean(value));
+  }
+
+  get conviction(): i32 {
+    let value = this.get("conviction");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set conviction(value: i32) {
+    this.set("conviction", Value.fromI32(value));
   }
 }
 
@@ -1185,19 +1211,6 @@ export class Delegated extends Entity {
     this.set("delegatedAmount", Value.fromBigInt(value));
   }
 
-  get conviction(): i32 {
-    let value = this.get("conviction");
-    if (!value || value.kind == ValueKind.NULL) {
-      return 0;
-    } else {
-      return value.toI32();
-    }
-  }
-
-  set conviction(value: i32) {
-    this.set("conviction", Value.fromI32(value));
-  }
-
   get blockNumber(): BigInt {
     let value = this.get("blockNumber");
     if (!value || value.kind == ValueKind.NULL) {
@@ -1235,6 +1248,19 @@ export class Delegated extends Entity {
 
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
+  }
+
+  get conviction(): i32 {
+    let value = this.get("conviction");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set conviction(value: i32) {
+    this.set("conviction", Value.fromI32(value));
   }
 }
 
@@ -2095,5 +2121,129 @@ export class Voted extends Entity {
 
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
+  }
+}
+
+export class Proposal extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Proposal entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type Proposal must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("Proposal", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): Proposal | null {
+    return changetype<Proposal | null>(store.get("Proposal", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get proposalIndex(): BigInt {
+    let value = this.get("proposalIndex");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set proposalIndex(value: BigInt) {
+    this.set("proposalIndex", Value.fromBigInt(value));
+  }
+
+  get deposit(): BigInt {
+    let value = this.get("deposit");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set deposit(value: BigInt) {
+    this.set("deposit", Value.fromBigInt(value));
+  }
+}
+
+export class Seconded extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Seconded entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type Seconded must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("Seconded", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): Seconded | null {
+    return changetype<Seconded | null>(store.get("Seconded", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBytes();
+    }
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get proposalIndex(): BigInt {
+    let value = this.get("proposalIndex");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set proposalIndex(value: BigInt) {
+    this.set("proposalIndex", Value.fromBigInt(value));
+  }
+
+  get seconder(): string {
+    let value = this.get("seconder");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toString();
+    }
+  }
+
+  set seconder(value: string) {
+    this.set("seconder", Value.fromString(value));
   }
 }
